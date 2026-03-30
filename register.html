@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Register | D Star Athletic Club</title>
+    <meta
+      name="description"
+      content="Register for sports events at D Star Athletic Club through the dedicated athlete and team signup page."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Manrope:wght@400;500;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container nav">
+        <a class="brand" href="./index.html">
+          <img class="brand-logo" src="./assets/logo.png" alt="D Star Athletic Club logo" />
+          <span class="brand-text">
+            <strong>D Star Athletic Club</strong>
+            <small>Sports Events & Registration</small>
+          </span>
+        </a>
+        <button class="menu-toggle" id="menuToggle" aria-expanded="false" aria-controls="siteNav" aria-label="Open menu">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+        <nav class="nav-links" id="siteNav">
+          <a href="./index.html#events">Events</a>
+          <a href="./index.html#experience">Experience</a>
+          <a href="./index.html#highlights">Highlights</a>
+          <a href="./register.html">Register</a>
+          <a href="./index.html#contact">Contact</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="inner-hero">
+        <div class="container inner-hero-grid">
+          <div class="registration-copy">
+            <p class="eyebrow">Dedicated Signup Page</p>
+            <h1 class="inner-title">Register for your next event with one direct link.</h1>
+            <p class="hero-text">
+              This standalone registration page is ready to share with athletes,
+              parents, schools, and club teams so they can sign up quickly from
+              any device.
+            </p>
+            <div class="check-list">
+              <div>Football, basketball, athletics, and badminton</div>
+              <div>Individual, school team, and club team registration</div>
+              <div>Instant on-page confirmation after submit</div>
+            </div>
+            <div class="mini-panel">
+              <strong>Registration support</strong>
+              <p>
+                Share this page directly with participants. It works as a clean
+                single-purpose signup link for events, trials, and school entries.
+              </p>
+            </div>
+          </div>
+
+          <div class="form-stack">
+            <section class="selection-panel">
+              <div class="form-heading">
+                <h3>Select Your Event</h3>
+                <p>Choose the competition you want to register for.</p>
+              </div>
+              <div class="event-selection-grid" id="eventSelectionGrid">
+                <button class="event-choice is-selected" type="button" data-event="Elite 7-a-Side Cup" data-sport="Football">
+                  <span class="event-choice-tag">Football</span>
+                  <strong>Elite 7-a-Side Cup</strong>
+                  <small>Team-based knockout format</small>
+                </button>
+                <button class="event-choice" type="button" data-event="Track & Sprint Challenge" data-sport="Athletics">
+                  <span class="event-choice-tag">Athletics</span>
+                  <strong>Track & Sprint Challenge</strong>
+                  <small>100m, 200m, relay, endurance</small>
+                </button>
+                <button class="event-choice" type="button" data-event="Hoops Weekend League" data-sport="Basketball">
+                  <span class="event-choice-tag">Basketball</span>
+                  <strong>Hoops Weekend League</strong>
+                  <small>Bracket play under lights</small>
+                </button>
+                <button class="event-choice" type="button" data-event="City Shuttle Open" data-sport="Badminton">
+                  <span class="event-choice-tag">Badminton</span>
+                  <strong>City Shuttle Open</strong>
+                  <small>Singles and doubles entries</small>
+                </button>
+              </div>
+            </section>
+
+            <form class="registration-form" id="registrationForm">
+              <div class="form-heading">
+                <h3>Registration Form</h3>
+                <p>Fill out the details below to reserve your spot.</p>
+              </div>
+
+              <div class="selected-event-banner">
+                <span>Selected event</span>
+                <strong id="selectedEventLabel">Elite 7-a-Side Cup</strong>
+              </div>
+
+              <input type="hidden" name="eventName" id="eventName" value="Elite 7-a-Side Cup" />
+
+              <div class="form-grid">
+                <label>
+                  Full Name
+                  <input type="text" name="name" placeholder="Enter your name" required />
+                </label>
+                <label>
+                  Email Address
+                  <input type="email" name="email" placeholder="Enter your email" required />
+                </label>
+              </div>
+
+              <div class="form-grid">
+                <label>
+                  Phone Number
+                  <input type="tel" name="phone" placeholder="Enter your phone number" required />
+                </label>
+                <label>
+                  Age Group
+                  <select name="ageGroup" required>
+                    <option value="">Select age group</option>
+                    <option>Under 14</option>
+                    <option>Under 17</option>
+                    <option>Under 21</option>
+                    <option>Open Category</option>
+                  </select>
+                </label>
+              </div>
+
+              <div class="form-grid">
+                <label>
+                  Sport
+                  <select name="sport" id="sportSelect" required>
+                    <option value="">Choose a sport</option>
+                    <option>Football</option>
+                    <option>Basketball</option>
+                    <option>Athletics</option>
+                    <option>Badminton</option>
+                  </select>
+                </label>
+                <label>
+                  Participant Type
+                  <select name="participantType" required>
+                    <option value="">Choose type</option>
+                    <option>Individual</option>
+                    <option>School Team</option>
+                    <option>Club Team</option>
+                  </select>
+                </label>
+              </div>
+
+              <label>
+                Additional Notes
+                <textarea name="notes" rows="4" placeholder="Mention team name, preferred slot, or anything important."></textarea>
+              </label>
+
+              <button class="button button-primary button-full" type="submit">
+                Complete Registration
+              </button>
+
+              <div class="success-card" id="successCard" hidden>
+                <span class="success-badge">Registration received</span>
+                <h4>We’ve captured your entry.</h4>
+                <p id="formResult" aria-live="polite"></p>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-grid">
+        <div>
+          <h3>D Star Athletic Club</h3>
+          <p>
+            A dedicated sports event registration experience for schools,
+            individual athletes, and club teams.
+          </p>
+        </div>
+        <div>
+          <h4>Contact</h4>
+          <p>hello@dstarclub.demo</p>
+          <p>+91 98765 43210</p>
+        </div>
+        <div>
+          <h4>Main Site</h4>
+          <p><a href="./index.html">Back to homepage</a></p>
+          <p>City Arena Sports Complex</p>
+        </div>
+      </div>
+    </footer>
+
+    <script src="./script.js"></script>
+  </body>
+</html>
