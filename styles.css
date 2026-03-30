@@ -270,44 +270,42 @@ a {
 }
 
 .hero-panel {
-  position: relative;
-  min-height: 440px;
+  display: grid;
+  gap: 1.1rem;
+  align-content: start;
 }
 
 .hero-visual-shell {
-  position: absolute;
-  top: 2rem;
-  right: 0;
-  width: min(100%, 470px);
-  padding: 1rem;
-  border-radius: 34px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  position: relative;
+  overflow: hidden;
+  padding: 0.9rem;
+  border-radius: 32px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.03));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: var(--shadow);
 }
 
 .hero-visual {
   display: block;
   width: 100%;
-  height: 420px;
+  height: 360px;
   object-fit: cover;
   object-position: center top;
   border-radius: 26px;
 }
 
-.panel-stripes {
+.hero-visual-badge {
   position: absolute;
-  inset: 1rem;
-  border-radius: 34px;
-  background:
-    linear-gradient(135deg, rgba(196, 15, 47, 0.2), transparent 40%),
-    repeating-linear-gradient(
-      -45deg,
-      rgba(255, 255, 255, 0.03),
-      rgba(255, 255, 255, 0.03) 12px,
-      transparent 12px,
-      transparent 24px
-    );
-  filter: blur(0.2px);
+  left: 1.5rem;
+  bottom: 1.5rem;
+  padding: 0.7rem 1rem;
+  border-radius: 999px;
+  background: rgba(6, 19, 38, 0.82);
+  color: var(--white);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .floating-card {
@@ -318,24 +316,10 @@ a {
   box-shadow: var(--shadow);
 }
 
-.card-glow {
-  position: absolute;
-  inset: 0 0 auto auto;
-  width: min(100%, 420px);
-}
-
-.accent-card {
-  position: absolute;
-  left: 0;
-  bottom: 1.5rem;
-  width: 220px;
-  background: linear-gradient(160deg, var(--accent), #aeb8c8);
-  color: #081322;
-}
-
-.accent-card p,
-.accent-card strong {
-  color: inherit;
+.hero-event-card {
+  background:
+    linear-gradient(180deg, rgba(8, 26, 52, 0.92), rgba(8, 26, 52, 0.82)),
+    linear-gradient(135deg, rgba(196, 15, 47, 0.1), transparent 60%);
 }
 
 .panel-footer {
@@ -355,6 +339,22 @@ a {
 
 .panel-footer strong {
   font-size: 1rem;
+}
+
+.hero-card-highlights {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin-top: 1.2rem;
+}
+
+.hero-card-highlights span {
+  padding: 0.55rem 0.85rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--accent-soft);
+  font-size: 0.86rem;
+  font-weight: 700;
 }
 
 .chip,
@@ -463,6 +463,10 @@ a {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.event-grid-two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .info-card,
 .feature-item,
 .registration-form,
@@ -490,6 +494,48 @@ a {
   display: inline-block;
   margin-top: 1.2rem;
   color: var(--accent-soft);
+}
+
+.event-quickline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 0.9rem 0 0.7rem;
+}
+
+.event-quickline span {
+  padding: 0.45rem 0.8rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--accent-soft);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.event-points {
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.event-points li {
+  color: var(--muted);
+  line-height: 1.55;
+  padding-left: 1.1rem;
+  position: relative;
+}
+
+.event-points li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.55rem;
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 999px;
+  background: var(--primary);
 }
 
 .card-meta {
@@ -689,6 +735,14 @@ a {
   line-height: 1.5;
 }
 
+.event-choice-line {
+  display: block;
+  margin-top: 0.45rem;
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
 .event-choice-tag,
 .success-badge {
   display: inline-flex;
@@ -741,6 +795,10 @@ a {
   margin-top: 1.4rem;
   padding: 1.2rem 1.25rem;
   background: linear-gradient(180deg, rgba(196, 15, 47, 0.12), rgba(255, 255, 255, 0.03));
+}
+
+.payment-note {
+  margin-bottom: 1rem;
 }
 
 .mini-panel strong {
@@ -820,6 +878,10 @@ a {
   resize: vertical;
 }
 
+.registration-form input[type="file"] {
+  padding: 0.8rem;
+}
+
 .registration-form input:focus,
 .registration-form select:focus,
 .registration-form textarea:focus {
@@ -886,19 +948,6 @@ a {
   .gallery-cards {
     grid-template-columns: 1fr;
   }
-
-  .hero-panel {
-    min-height: 680px;
-  }
-
-  .card-glow {
-    width: 100%;
-  }
-
-  .accent-card {
-    left: auto;
-    right: 0;
-  }
 }
 
 @media (max-width: 720px) {
@@ -953,25 +1002,39 @@ a {
     grid-template-columns: 1fr;
   }
 
-  .hero-panel {
-    min-height: auto;
-  }
-
   .hero-visual-shell {
-    position: static;
     width: 100%;
-    margin-top: 1rem;
   }
 
   .hero-visual {
-    height: 320px;
+    height: 280px;
   }
 
-  .card-glow,
-  .accent-card {
-    position: static;
+  .info-card {
+    padding: 1.2rem;
+  }
+
+  .event-choice {
+    padding: 1rem 0.95rem;
+  }
+
+  .event-choice strong {
+    font-size: 1.05rem;
+  }
+
+  .event-choice-line {
+    font-size: 0.84rem;
+  }
+
+  .event-quickline {
+    gap: 0.45rem;
+  }
+
+  .event-quickline span,
+  .card-meta span {
     width: 100%;
-    margin-top: 1rem;
+    justify-content: center;
+    text-align: center;
   }
 
   .registration-form,
