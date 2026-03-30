@@ -80,6 +80,20 @@ a {
   line-height: 1.05;
 }
 
+.brand-text strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.brand-runner-image {
+  width: 1.7rem;
+  height: 1.7rem;
+  object-fit: contain;
+  display: inline-block;
+  vertical-align: middle;
+}
+
 .brand-text strong,
 .hero h1,
 .section-heading h2,
