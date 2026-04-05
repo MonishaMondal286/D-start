@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Certificates | Kharagpur Mini Marathon 2026</title>
+    <meta
+      name="description"
+      content="Download participant and ranked certificates for Kharagpur Mini Marathon 2026 after admin approval."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Manrope:wght@400;500;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container nav">
+        <a class="brand" href="./index.html">
+          <img class="brand-logo" src="./assets/logo.png" alt="D Star Athletic Club logo" />
+          <span class="brand-text">
+            <strong>D Star Athletic Club <img class="brand-runner-image" src="./run.png" alt="Running athlete" /></strong>
+            <small>Sports Events & Registration</small>
+          </span>
+        </a>
+        <button class="menu-toggle" id="menuToggle" aria-expanded="false" aria-controls="siteNav" aria-label="Open menu">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+        <nav class="nav-links" id="siteNav">
+          <a href="./index.html#events">Events</a>
+          <a href="./register.html">Register</a>
+          <a href="./certificate.html">Certificates</a>
+          <a href="./index.html#contact">Contact</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="section certificate-section">
+        <div class="container certificate-grid">
+          <div class="certificate-copy">
+            <p class="eyebrow">E-Certificate</p>
+            <h2>Download your mini marathon certificate.</h2>
+            <p>
+              Enter your full name and date of birth exactly as used in registration.
+              Certificates are enabled only after admin approval.
+            </p>
+            <div class="check-list">
+              <div>Participant or Ranked certificates only</div>
+              <div>Available after result updates</div>
+              <div>Use the same spelling from registration</div>
+            </div>
+          </div>
+
+          <div class="certificate-card">
+            <form class="certificate-form" id="certificateForm">
+              <label>
+                Full Name
+                <input type="text" name="name" placeholder="Enter your full name" required />
+              </label>
+              <label>
+                Date of Birth
+                <input type="date" name="dob" required />
+              </label>
+              <button class="button button-primary button-full" type="submit">Find Certificate</button>
+              <p class="form-note" id="certificateMessage"></p>
+            </form>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="./certificate.js"></script>
+  </body>
+</html>

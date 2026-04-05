@@ -1,3 +1,16 @@
+import { db, storage, serverTimestamp } from "./firebase.js";
+import {
+  collection,
+  runTransaction,
+  doc,
+  setDoc,
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+  ref,
+  uploadBytes,
+  getDownloadURL,
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
 const form = document.getElementById("registrationForm");
 const formResult = document.getElementById("formResult");
 const menuToggle = document.getElementById("menuToggle");
@@ -8,6 +21,29 @@ const eventDisplay = document.getElementById("eventDisplay");
 const selectedEventLabel = document.getElementById("selectedEventLabel");
 const successCard = document.getElementById("successCard");
 const genderSelect = document.getElementById("genderSelect");
+const submitButton = form ? form.querySelector("button[type=\"submit\"]") : null;
+
+async function uploadFile(file, folderPath) {
+  if (!file || !file.name) return null;
+  const extension = file.name.includes(".") ? file.name.split(".").pop() : "file";
+  const uniqueId = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
+  const safeName = `${uniqueId}.${extension}`;
+  const fileRef = ref(storage, `${folderPath}/${safeName}`);
+  await uploadBytes(fileRef, file);
+  return getDownloadURL(fileRef);
+}
+
+async function getNextRegistrationNumber() {
+  const counterRef = doc(db, "counters", "registration");
+  const nextNumber = await runTransaction(db, async (transaction) => {
+    const snap = await transaction.get(counterRef);
+    const lastNumber = snap.exists() ? Number(snap.data().lastNumber || 0) : 0;
+    const newNumber = lastNumber + 1;
+    transaction.set(counterRef, { lastNumber: newNumber }, { merge: true });
+    return newNumber;
+  });
+  return String(nextNumber).padStart(4, "0");
+}
 
 if (menuToggle && siteNav) {
   menuToggle.addEventListener("click", () => {
@@ -24,35 +60,90 @@ if (menuToggle && siteNav) {
 }
 
 if (form && formResult) {
-  form.addEventListener("submit", (event) => {
+  form.addEventListener("submit", async (event) => {
     event.preventDefault();
 
     const formData = new FormData(form);
     const name = formData.get("name");
     const gender = formData.get("gender");
-    const eventName = formData.get("eventName");
+    let eventName = formData.get("eventName");
+    const photoFile = formData.get("photo");
+    const govtIdFile = formData.get("govtId");
 
-    formResult.textContent = `${name}, your registration for ${eventName} has been received successfully. The entry is marked as ${gender} category, and payment gateway will be added later.`;
-    if (successCard) {
-      successCard.hidden = false;
+    if (!eventName) {
+      eventName = gender === "Female" ? "Women 5 KM" : "Men 10 KM";
     }
-    form.reset();
-    if (eventNameInput) {
-      eventNameInput.value = "";
+
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = "Submitting...";
     }
-    if (eventDisplay) {
-      eventDisplay.value = "";
-    }
-    if (selectedEventLabel) {
-      selectedEventLabel.textContent = "Choose gender to assign event";
-    }
-    if (eventSelectionGrid) {
-      eventSelectionGrid.querySelectorAll(".event-choice").forEach((choice) => {
-        choice.classList.remove("is-selected");
-      });
-    }
-    if (genderSelect) {
-      genderSelect.value = "";
+
+    try {
+      const regNumber = await getNextRegistrationNumber();
+      const registrationRef = doc(collection(db, "registrations"));
+      const folderPath = `registrations/${registrationRef.id}`;
+      const [photoUrl, govtIdUrl] = await Promise.all([
+        uploadFile(photoFile, folderPath),
+        uploadFile(govtIdFile, folderPath),
+      ]);
+
+      const payload = {
+        name: String(name || "").trim(),
+        nameLower: String(name || "").trim().toLowerCase(),
+        fatherName: String(formData.get("fatherName") || "").trim(),
+        gender: String(gender || "").trim(),
+        eventName,
+        dob: String(formData.get("dob") || "").trim(),
+        phone: String(formData.get("phone") || "").trim(),
+        email: String(formData.get("email") || "").trim(),
+        medicalCondition: String(formData.get("medicalCondition") || "").trim(),
+        tshirtSize: String(formData.get("tshirtSize") || "").trim(),
+        fee: gender === "Female" ? 250 : 350,
+        regNumber,
+        photoUrl: photoUrl || "",
+        govtIdUrl: govtIdUrl || "",
+        status: "pending",
+        certificateStatus: "pending",
+        rank: "",
+        createdAt: serverTimestamp(),
+      };
+
+      await setDoc(registrationRef, payload);
+
+      formResult.textContent = `${name}, your registration for ${eventName} has been received successfully. Your registration number is ${regNumber}.`;
+      if (successCard) {
+        successCard.hidden = false;
+      }
+      form.reset();
+      if (eventNameInput) {
+        eventNameInput.value = "";
+      }
+      if (eventDisplay) {
+        eventDisplay.value = "";
+      }
+      if (selectedEventLabel) {
+        selectedEventLabel.textContent = "Choose gender to assign event";
+      }
+      if (eventSelectionGrid) {
+        eventSelectionGrid.querySelectorAll(".event-choice").forEach((choice) => {
+          choice.classList.remove("is-selected");
+        });
+      }
+      if (genderSelect) {
+        genderSelect.value = "";
+      }
+    } catch (error) {
+      formResult.textContent = "Sorry, we could not save your registration. Please try again.";
+      if (successCard) {
+        successCard.hidden = false;
+      }
+      console.error(error);
+    } finally {
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent = "Submit Registration";
+      }
     }
   });
 }
