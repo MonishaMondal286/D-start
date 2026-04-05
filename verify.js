@@ -1,10 +1,7 @@
 import { db } from "./firebase.js";
 import {
-  collection,
-  getDocs,
-  limit,
-  query,
-  where,
+  doc,
+  getDoc,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const form = document.getElementById("verifyForm");
@@ -28,21 +25,17 @@ function resetResult() {
   if (rankField) rankField.textContent = "";
 }
 
-async function fetchByReg(regNumber) {
-  const registrationQuery = query(
-    collection(db, "registrations"),
-    where("regNumber", "==", regNumber),
-    limit(1)
-  );
-  const snapshot = await getDocs(registrationQuery);
-  return snapshot.empty ? null : snapshot.docs[0].data();
+async function fetchByCert(certId) {
+  const certRef = doc(db, "certificates", certId);
+  const snap = await getDoc(certRef);
+  return snap.exists() ? snap.data() : null;
 }
 
-async function handleVerify(regNumber) {
+async function handleVerify(certId) {
   resetResult();
   showMessage("Verifying...", false);
 
-  const data = await fetchByReg(regNumber);
+  const data = await fetchByCert(certId);
   if (!data) {
     showMessage("No certificate found for this registration number.", true);
     return;
@@ -51,7 +44,7 @@ async function handleVerify(regNumber) {
   const status = data.certificateStatus || "pending";
   if (nameField) nameField.textContent = data.name || "-";
   if (metaField) metaField.textContent = `${data.eventName || "Event"} • ${data.gender || ""} • DOB ${data.dob || ""}`;
-  if (regField) regField.textContent = `Registration No: ${data.regNumber || regNumber}`;
+  if (regField) regField.textContent = `Registration No: ${data.regNumber || ""}`;
 
   if (status === "ranked") {
     if (titleField) titleField.textContent = "Ranked Certificate";
@@ -82,7 +75,7 @@ if (form) {
       return;
     }
     try {
-      await handleVerify(regNumber);
+      showMessage("Use the QR code from the certificate for verification.", true);
     } catch (error) {
       console.error(error);
       showMessage("Unable to verify right now. Please try again.", true);
@@ -91,9 +84,9 @@ if (form) {
 }
 
 const params = new URLSearchParams(window.location.search);
-const regParam = params.get("reg");
-if (regParam) {
-  handleVerify(regParam).catch((error) => {
+const certParam = params.get("cert");
+if (certParam) {
+  handleVerify(certParam).catch((error) => {
     console.error(error);
   });
 }

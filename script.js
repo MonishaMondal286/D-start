@@ -23,6 +23,14 @@ const successCard = document.getElementById("successCard");
 const genderSelect = document.getElementById("genderSelect");
 const submitButton = form ? form.querySelector("button[type=\"submit\"]") : null;
 
+const EMAILJS_SERVICE_ID = "service_oelo1t3";
+const EMAILJS_TEMPLATE_ID = "template_t3lut81";
+const EMAILJS_PUBLIC_KEY = "VsrnVcsptNZyqUHKP";
+
+if (window.emailjs) {
+  window.emailjs.init(EMAILJS_PUBLIC_KEY);
+}
+
 async function uploadFile(file, folderPath) {
   if (!file || !file.name) return null;
   const extension = file.name.includes(".") ? file.name.split(".").pop() : "file";
@@ -88,6 +96,7 @@ if (form && formResult) {
         uploadFile(govtIdFile, folderPath),
       ]);
 
+      const fee = gender === "Female" ? 250 : 350;
       const payload = {
         name: String(name || "").trim(),
         nameLower: String(name || "").trim().toLowerCase(),
@@ -99,7 +108,7 @@ if (form && formResult) {
         email: String(formData.get("email") || "").trim(),
         medicalCondition: String(formData.get("medicalCondition") || "").trim(),
         tshirtSize: String(formData.get("tshirtSize") || "").trim(),
-        fee: gender === "Female" ? 250 : 350,
+        fee,
         regNumber,
         photoUrl: photoUrl || "",
         govtIdUrl: govtIdUrl || "",
@@ -110,6 +119,28 @@ if (form && formResult) {
       };
 
       await setDoc(registrationRef, payload);
+
+      const websiteLink = `${window.location.origin}/index.html`;
+      const emailParams = {
+        name: payload.name,
+        category: payload.eventName,
+        amount: payload.fee,
+        website_link: websiteLink,
+        reg_number: payload.regNumber,
+        event_date: "10 May 2026",
+        reporting_time: "5:00 AM",
+        start_time: "6:00 AM",
+        venue: "Kharagpur Sersa Stadium, Paschim Medinipur, West Bengal",
+        email: payload.email,
+      };
+
+      try {
+        if (window.emailjs) {
+          await window.emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, emailParams);
+        }
+      } catch (mailError) {
+        console.error("Email send failed", mailError);
+      }
 
       formResult.textContent = `${name}, your registration for ${eventName} has been received successfully. Your registration number is ${regNumber}.`;
       if (successCard) {

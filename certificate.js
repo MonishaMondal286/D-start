@@ -1,10 +1,7 @@
 import { db } from "./firebase.js";
 import {
-  collection,
-  getDocs,
-  limit,
-  query,
-  where,
+  doc,
+  getDoc,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const menuToggle = document.getElementById("menuToggle");
@@ -33,20 +30,23 @@ function showMessage(text, isError = false) {
 }
 
 async function precheck(name, dob) {
-  const registrationQuery = query(
-    collection(db, "registrations"),
-    where("nameLower", "==", name.toLowerCase()),
-    where("dob", "==", dob),
-    limit(1)
-  );
-  const snapshot = await getDocs(registrationQuery);
-  if (snapshot.empty) return { ok: false, message: "No registration found with those details." };
-  const data = snapshot.docs[0].data();
+  const certId = await hashCertificateId(name.toLowerCase(), dob);
+  const certRef = doc(db, "certificates", certId);
+  const snap = await getDoc(certRef);
+  if (!snap.exists()) return { ok: false, message: "No registration found with those details." };
+  const data = snap.data();
   const status = data.certificateStatus || "pending";
   if (status === "pending") {
     return { ok: false, message: "Your certificate is not available yet. Please check after admin updates." };
   }
-  return { ok: true };
+  return { ok: true, certId };
+}
+
+async function hashCertificateId(nameLower, dob) {
+  const input = `${nameLower}|${dob}`;
+  const data = new TextEncoder().encode(input);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(hashBuffer)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 if (form) {
@@ -69,7 +69,7 @@ if (form) {
         showMessage(result.message, true);
         return;
       }
-      const targetUrl = `./certificate-result.html?name=${encodeURIComponent(name)}&dob=${encodeURIComponent(dob)}`;
+      const targetUrl = `./certificate-result.html?cert=${encodeURIComponent(result.certId)}`;
       window.location.href = targetUrl;
     } catch (error) {
       console.error(error);

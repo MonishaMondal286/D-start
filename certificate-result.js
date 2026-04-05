@@ -1,10 +1,7 @@
 import { db } from "./firebase.js";
 import {
-  collection,
-  getDocs,
-  limit,
-  query,
-  where,
+  doc,
+  getDoc,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const nameField = document.getElementById("certificateName");
@@ -23,23 +20,17 @@ function showMessage(text, isError = false) {
   message.classList.toggle("is-error", isError);
 }
 
-async function loadCertificate(name, dob) {
+async function loadCertificate(certId) {
   showMessage("Loading certificate...", false);
 
-  const registrationQuery = query(
-    collection(db, "registrations"),
-    where("nameLower", "==", name.toLowerCase()),
-    where("dob", "==", dob),
-    limit(1)
-  );
-
-  const snapshot = await getDocs(registrationQuery);
-  if (snapshot.empty) {
+  const certRef = doc(db, "certificates", certId);
+  const snap = await getDoc(certRef);
+  if (!snap.exists()) {
     showMessage("No registration found with those details.", true);
     return;
   }
 
-  const data = snapshot.docs[0].data();
+  const data = snap.data();
   const status = data.certificateStatus || "pending";
 
   if (status === "pending") {
@@ -47,9 +38,9 @@ async function loadCertificate(name, dob) {
     return;
   }
 
-  if (nameField) nameField.textContent = data.name || name;
+  if (nameField) nameField.textContent = data.name || "";
   if (metaField) {
-    metaField.textContent = data.eventName || "Event";
+    metaField.textContent = data.category || data.eventName || "Event";
   }
   if (regField) regField.textContent = `Registration No: ${data.regNumber || "-"}`;
 
@@ -69,7 +60,7 @@ async function loadCertificate(name, dob) {
 
   if (qrImage) {
     const baseUrl = window.location.origin;
-    const verifyUrl = `${baseUrl}/verify.html?reg=${encodeURIComponent(data.regNumber || "")}`;
+    const verifyUrl = `${baseUrl}/verify.html?cert=${encodeURIComponent(certId)}`;
     qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(verifyUrl)}`;
   }
 
@@ -77,11 +68,10 @@ async function loadCertificate(name, dob) {
 }
 
 const params = new URLSearchParams(window.location.search);
-const name = String(params.get("name") || "").trim();
-const dob = String(params.get("dob") || "").trim();
+const certId = String(params.get("cert") || "").trim();
 
-if (name && dob) {
-  loadCertificate(name, dob).catch((error) => {
+if (certId) {
+  loadCertificate(certId).catch((error) => {
     console.error(error);
     showMessage("Unable to load certificate. Please try again.", true);
   });
