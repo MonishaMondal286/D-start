@@ -1,4 +1,4 @@
-import { db, auth, functions, serverTimestamp } from "../firebase.js";
+import { db, auth, serverTimestamp } from "../firebase.js";
 import {
   collection,
   getDocs,
@@ -15,7 +15,6 @@ import {
   onAuthStateChanged,
   signOut,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
 
 const menuToggle = document.getElementById("menuToggle");
 const siteNav = document.getElementById("siteNav");
@@ -42,7 +41,6 @@ const imageModalImg = document.getElementById("imageModalImg");
 const imageModalClose = document.getElementById("imageModalClose");
 const imageModalBackdrop = document.getElementById("imageModalBackdrop");
 const imageModalDownload = document.getElementById("imageModalDownload");
-const getCloudinarySignedUrl = httpsCallable(functions, "getCloudinarySignedUrl");
 
 let registrations = [];
 let selectedIds = new Set();
@@ -168,25 +166,25 @@ function renderTable(list) {
     const fileList = document.createElement("div");
     fileList.className = "file-links";
 
-    if (reg.photoPublicId || reg.photoUrl) {
+    if (reg.photoUrl) {
       const photoWrap = document.createElement("div");
       photoWrap.className = "file-item";
       const photoButton = document.createElement("button");
       photoButton.type = "button";
       photoButton.className = "thumb-button";
       photoButton.textContent = "View Photo";
-      photoButton.addEventListener("click", () => openImageModal(reg.photoPublicId, reg.photoResourceType, reg.photoUrl));
+      photoButton.addEventListener("click", () => openImageModal(reg.photoUrl));
       const photoLink = document.createElement("button");
       photoLink.type = "button";
       photoLink.className = "link-button";
       photoLink.textContent = "Download";
-      photoLink.addEventListener("click", () => openSignedUrl(reg.photoPublicId, reg.photoResourceType, reg.photoUrl));
+      photoLink.addEventListener("click", () => openSignedUrl(reg.photoUrl));
       photoWrap.appendChild(photoButton);
       photoWrap.appendChild(photoLink);
       fileList.appendChild(photoWrap);
     }
 
-    if (reg.govtIdPublicId || reg.govtIdUrl) {
+    if (reg.govtIdUrl) {
       const idWrap = document.createElement("div");
       idWrap.className = "file-item";
       const isPdf = (reg.govtIdUrl || "").toLowerCase().includes(".pdf");
@@ -195,14 +193,14 @@ function renderTable(list) {
         idButton.type = "button";
         idButton.className = "thumb-button";
         idButton.textContent = "View ID";
-        idButton.addEventListener("click", () => openImageModal(reg.govtIdPublicId, reg.govtIdResourceType, reg.govtIdUrl));
+        idButton.addEventListener("click", () => openImageModal(reg.govtIdUrl));
         idWrap.appendChild(idButton);
       }
       const idLink = document.createElement("button");
       idLink.type = "button";
       idLink.className = "link-button";
       idLink.textContent = isPdf ? "Govt ID (PDF)" : "Govt ID";
-      idLink.addEventListener("click", () => openSignedUrl(reg.govtIdPublicId, reg.govtIdResourceType, reg.govtIdUrl));
+      idLink.addEventListener("click", () => openSignedUrl(reg.govtIdUrl));
       idWrap.appendChild(idLink);
       fileList.appendChild(idWrap);
     }
@@ -336,35 +334,17 @@ function renderTable(list) {
   });
 }
 
-async function openImageModal(publicId, resourceType, fallbackUrl) {
+function openImageModal(url) {
   if (!imageModal || !imageModalImg || !imageModalDownload) return;
-  try {
-    let finalUrl = fallbackUrl;
-    if (publicId) {
-      const result = await getCloudinarySignedUrl({ publicId, resourceType });
-      finalUrl = result.data.url;
-    }
-    if (!finalUrl) return;
-    imageModalImg.src = finalUrl;
-    imageModalDownload.href = finalUrl;
-  } catch (error) {
-    console.error(error);
-  }
+  if (!url) return;
+  imageModalImg.src = url;
+  imageModalDownload.href = url;
   imageModal.hidden = false;
 }
 
-async function openSignedUrl(publicId, resourceType, fallbackUrl) {
-  try {
-    let finalUrl = fallbackUrl;
-    if (publicId) {
-      const result = await getCloudinarySignedUrl({ publicId, resourceType });
-      finalUrl = result.data.url;
-    }
-    if (finalUrl) {
-      window.open(finalUrl, "_blank", "noopener");
-    }
-  } catch (error) {
-    console.error(error);
+function openSignedUrl(url) {
+  if (url) {
+    window.open(url, "_blank", "noopener");
   }
 }
 
