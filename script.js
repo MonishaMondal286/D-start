@@ -32,6 +32,87 @@ const CLOUDINARY_CLOUD_NAME = "dpyslavgz";
 const CLOUDINARY_UPLOAD_PRESET = "x2uxplk3";
 const CLOUDINARY_FOLDER = "kdsac-registrations";
 
+async function createRazorpayOrder(amount, name, category) {
+  const response = await fetch("/api/create-order", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      amount,
+      name,
+      category,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.error || "Payment setup failed");
+  }
+
+  return response.json();
+}
+
+function openRazorpayCheckout(order, prefill) {
+  return new Promise((resolve, reject) => {
+    if (!window.Razorpay) {
+      reject(new Error("Payment gateway unavailable"));
+      return;
+    }
+
+    const options = {
+      key: order.keyId,
+      amount: order.amount,
+      currency: order.currency,
+      name: "Kharagpur Mini Marathon 2026",
+      description: "Registration Fee",
+      order_id: order.orderId,
+      prefill,
+      theme: {
+        color: "#ff6a00",
+      },
+      handler: (response) => {
+        resolve({
+          paymentId: response.razorpay_payment_id,
+          orderId: response.razorpay_order_id,
+          signature: response.razorpay_signature,
+        });
+      },
+      modal: {
+        ondismiss: () => {
+          reject(new Error("Payment was cancelled"));
+        },
+      },
+    };
+
+    const instance = new window.Razorpay(options);
+    instance.on("payment.failed", (response) => {
+      reject(new Error(response.error?.description || "Payment failed"));
+    });
+    instance.open();
+  });
+}
+
+async function verifyRazorpayPayment(payment) {
+  const response = await fetch("/api/verify-payment", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      paymentId: payment.paymentId,
+      orderId: payment.orderId,
+      signature: payment.signature,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.error || "Payment verification failed");
+  }
+
+  const result = await response.json();
+  if (!result.verified) {
+    throw new Error("Payment verification failed");
+  }
+}
+
 async function uploadFile(file) {
   if (!file || !file.name) return null;
   const formData = new FormData();
@@ -107,6 +188,21 @@ if (form && formResult) {
 
     try {
       if (submitStatus) {
+        submitStatus.textContent = "Opening payment window...";
+      }
+      const fee = gender === "Female" ? 250 : 350;
+      const order = await createRazorpayOrder(fee, name, eventName);
+      const payment = await openRazorpayCheckout(order, {
+        name: String(name || "").trim(),
+        email: String(formData.get("email") || "").trim(),
+        contact: String(formData.get("phone") || "").trim(),
+      });
+      if (submitStatus) {
+        submitStatus.textContent = "Verifying payment...";
+      }
+      await verifyRazorpayPayment(payment);
+
+      if (submitStatus) {
         submitStatus.textContent = "Uploading documents...";
       }
       const regNumber = await getNextRegistrationNumber();
@@ -119,7 +215,6 @@ if (form && formResult) {
       if (submitStatus) {
         submitStatus.textContent = "Saving your registration...";
       }
-      const fee = gender === "Female" ? 250 : 350;
       const payload = {
         name: String(name || "").trim(),
         nameLower: String(name || "").trim().toLowerCase(),
@@ -132,6 +227,12 @@ if (form && formResult) {
         medicalCondition: String(formData.get("medicalCondition") || "").trim(),
         tshirtSize: String(formData.get("tshirtSize") || "").trim(),
         fee,
+        paymentId: payment.paymentId,
+        paymentOrderId: payment.orderId,
+        paymentSignature: payment.signature,
+        paymentAmount: fee,
+        paymentCurrency: "INR",
+        paymentStatus: "paid",
         regNumber,
         photoUrl: photoUrl || "",
         govtIdUrl: govtIdUrl || "",
@@ -195,7 +296,11 @@ if (form && formResult) {
         genderSelect.value = "";
       }
     } catch (error) {
-      formResult.textContent = "Sorry, we could not save your registration. Please try again.";
+      const message = error instanceof Error ? error.message : "";
+      formResult.textContent =
+        message && message.toLowerCase().includes("payment")
+          ? `${message}. Registration was not submitted.`
+          : "Sorry, we could not save your registration. Please try again.";
       if (successCard) {
         successCard.hidden = false;
       }
