@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /certificate-result.html
+Disallow: /verify.html
+Disallow: /certificate.html
+
+Sitemap: https://kdsac.in/sitemap.xml
