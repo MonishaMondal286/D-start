@@ -100,7 +100,6 @@
                 </div>
               <div class="panel-links">
                 <a href="../register.html">Registration</a>
-                <a href="../register.html?direct=1" id="directRegistrationLink">Direct Registration Link</a>
                 <a href="../certificate.html">Certificates</a>
                 <a href="../verify.html">Verify</a>
               </div>
@@ -171,6 +170,25 @@
               <p class="fine-print">
                 Tip: Set certificate status to "Participant" or "Ranked" after results are final. Only then can athletes download certificates.
               </p>
+            </div>
+
+            <div class="admin-panel">
+              <div class="panel-header">
+                <div>
+                  <h3>Direct Registration Access</h3>
+                  <p class="muted">Generate a secure link for cash/failed-payment entries. Disable anytime.</p>
+                </div>
+              </div>
+
+              <div class="bulk-actions">
+                <label class="bulk-select">
+                  <input type="checkbox" id="directAccessToggle" />
+                  Enable direct registration link
+                </label>
+                <button class="button button-secondary button-small" id="generateDirectKey" type="button">Generate Key</button>
+                <button class="button button-primary button-small" id="copyDirectLink" type="button">Copy Link</button>
+              </div>
+              <p class="form-note" id="directAccessMessage"></p>
             </div>
           </div>
         </div>

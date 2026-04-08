@@ -5,6 +5,7 @@ import {
   doc,
   setDoc,
   updateDoc,
+  getDoc,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const form = document.getElementById("registrationForm");
@@ -33,10 +34,30 @@ if (window.emailjs) {
 const CLOUDINARY_CLOUD_NAME = "dpyslavgz";
 const CLOUDINARY_UPLOAD_PRESET = "x2uxplk3";
 const CLOUDINARY_FOLDER = "kdsac-registrations";
-const directPayment = new URLSearchParams(window.location.search).get("direct") === "1";
+const directParams = new URLSearchParams(window.location.search);
+const directPayment = directParams.get("direct") === "1";
+const directKey = directParams.get("key") || "";
+let directAllowed = false;
 
-if (directPaymentNote && directPayment) {
-  directPaymentNote.hidden = false;
+async function hashDirectKey(value) {
+  const data = new TextEncoder().encode(value);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(hashBuffer)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function checkDirectAccess() {
+  if (!directPayment || !directKey) return false;
+  try {
+    const snap = await getDoc(doc(db, "settings", "directAccess"));
+    if (!snap.exists()) return false;
+    const data = snap.data();
+    if (data.enabled !== true || !data.keyHash) return false;
+    const localHash = await hashDirectKey(directKey);
+    return localHash === data.keyHash;
+  } catch (error) {
+    console.error("Direct access check failed", error);
+    return false;
+  }
 }
 
 async function createRazorpayOrder(amount, name, category) {
@@ -170,6 +191,15 @@ if (menuToggle && siteNav) {
 }
 
 if (form && formResult) {
+  checkDirectAccess().then((allowed) => {
+    directAllowed = allowed;
+    if (directPaymentNote && directPayment) {
+      directPaymentNote.hidden = false;
+      directPaymentNote.textContent = allowed
+        ? "Direct registration enabled (payment already received)."
+        : "Direct link invalid or disabled. Payment required.";
+    }
+  });
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
 
@@ -214,7 +244,7 @@ if (form && formResult) {
         method: "cash",
       };
 
-      if (!directPayment) {
+      if (!directAllowed) {
         if (submitStatus) {
           submitStatus.textContent = "Opening payment window...";
         }

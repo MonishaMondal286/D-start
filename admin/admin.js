@@ -46,12 +46,16 @@ const imageModalImg = document.getElementById("imageModalImg");
 const imageModalClose = document.getElementById("imageModalClose");
 const imageModalBackdrop = document.getElementById("imageModalBackdrop");
 const imageModalDownload = document.getElementById("imageModalDownload");
-const directRegistrationLink = document.getElementById("directRegistrationLink");
+const directAccessToggle = document.getElementById("directAccessToggle");
+const generateDirectKey = document.getElementById("generateDirectKey");
+const copyDirectLink = document.getElementById("copyDirectLink");
+const directAccessMessage = document.getElementById("directAccessMessage");
 
 let registrations = [];
 let selectedIds = new Set();
 let currentUser = null;
 let isAdminUser = false;
+let directAccessKey = "";
 
 const EMAILJS_SERVICE_ID = "service_oelo1t3";
 const EMAILJS_RANKED_TEMPLATE_ID = "template_hkgh7an";
@@ -97,6 +101,84 @@ function showLoginMessage(text, isError = false) {
   loginMessage.classList.toggle("is-error", isError);
 }
 
+async function hashDirectKey(value) {
+  const data = new TextEncoder().encode(value);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(hashBuffer)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function setDirectMessage(text) {
+  if (directAccessMessage) {
+    directAccessMessage.textContent = text;
+  }
+}
+
+async function loadDirectAccess() {
+  try {
+    const snap = await getDoc(doc(db, "settings", "directAccess"));
+    if (snap.exists()) {
+      const data = snap.data();
+      if (directAccessToggle) directAccessToggle.checked = data.enabled === true;
+    }
+  } catch (error) {
+    console.error("Direct access load failed", error);
+  }
+}
+
+async function saveDirectAccessConfig({ enabled, key }) {
+  const payload = { enabled: !!enabled, updatedAt: serverTimestamp() };
+  if (key) {
+    payload.keyHash = await hashDirectKey(key);
+  }
+  await setDoc(doc(db, "settings", "directAccess"), payload, { merge: true });
+}
+
+function buildDirectLink() {
+  if (!directAccessKey) return "";
+  return `${window.location.origin}/register.html?direct=1&key=${encodeURIComponent(directAccessKey)}`;
+}
+
+if (directAccessToggle) {
+  directAccessToggle.addEventListener("change", async () => {
+    try {
+      await saveDirectAccessConfig({ enabled: directAccessToggle.checked });
+      setDirectMessage(directAccessToggle.checked ? "Direct link enabled." : "Direct link disabled.");
+    } catch (error) {
+      console.error(error);
+      setDirectMessage("Unable to update direct link.");
+    }
+  });
+}
+
+if (generateDirectKey) {
+  generateDirectKey.addEventListener("click", async () => {
+    directAccessKey = `KDSAC-${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36).slice(-4)}`;
+    try {
+      await saveDirectAccessConfig({ enabled: directAccessToggle ? directAccessToggle.checked : true, key: directAccessKey });
+      setDirectMessage("New key generated.");
+    } catch (error) {
+      console.error(error);
+      setDirectMessage("Could not generate key.");
+    }
+  });
+}
+
+if (copyDirectLink) {
+  copyDirectLink.addEventListener("click", async () => {
+    const link = buildDirectLink();
+    if (!link) {
+      setDirectMessage("Generate a key first.");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(link);
+      setDirectMessage("Direct link copied.");
+    } catch (error) {
+      console.error(error);
+      setDirectMessage("Unable to copy link.");
+    }
+  });
+}
 async function hashCertificateId(nameLower, dob) {
   const input = `${nameLower}|${dob}`;
   const data = new TextEncoder().encode(input);
@@ -582,9 +664,7 @@ onAuthStateChanged(auth, async (user) => {
   isAdminUser = await checkAdmin(user);
 
   if (isAdminUser) {
-    if (directRegistrationLink) {
-      directRegistrationLink.href = `${window.location.origin}/register.html?direct=1`;
-    }
+    loadDirectAccess();
     if (adminLogin) {
       adminLogin.hidden = true;
       adminLogin.style.display = "none";
