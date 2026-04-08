@@ -215,8 +215,6 @@ if (form && formResult) {
         eventName = "Women 5 KM";
       } else if (gender === "Male") {
         eventName = "Men 10 KM";
-      } else {
-        eventName = "Other";
       }
     }
 
@@ -230,12 +228,7 @@ if (form && formResult) {
     }
 
     try {
-      let fee = 1;
-      if (gender === "Female") {
-        fee = 250;
-      } else if (gender === "Male") {
-        fee = 350;
-      }
+      const fee = gender === "Female" ? 250 : 350;
       let payment = {
         paymentId: "",
         orderId: "",
