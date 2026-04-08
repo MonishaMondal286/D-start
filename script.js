@@ -4,6 +4,8 @@ import {
   runTransaction,
   doc,
   setDoc,
+  updateDoc,
+  getDoc,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const form = document.getElementById("registrationForm");
@@ -31,6 +33,7 @@ if (window.emailjs) {
 const CLOUDINARY_CLOUD_NAME = "dpyslavgz";
 const CLOUDINARY_UPLOAD_PRESET = "x2uxplk3";
 const CLOUDINARY_FOLDER = "kdsac-registrations";
+let feeConfig = { men: 350, women: 250 };
 
 async function createRazorpayOrder(amount, name, category) {
   const response = await fetch("/api/create-order", {
@@ -136,6 +139,21 @@ async function uploadFile(file) {
   return result.secure_url || result.url || null;
 }
 
+async function loadFeeConfig() {
+  try {
+    const snap = await getDoc(doc(db, "settings", "fees"));
+    if (snap.exists()) {
+      const data = snap.data();
+      const menFee = Number(data.men);
+      const womenFee = Number(data.women);
+      if (Number.isFinite(menFee) && menFee >= 0) feeConfig.men = menFee;
+      if (Number.isFinite(womenFee) && womenFee >= 0) feeConfig.women = womenFee;
+    }
+  } catch (error) {
+    console.error("Fee config load failed", error);
+  }
+}
+
 async function getNextRegistrationNumber() {
   const counterRef = doc(db, "counters", "registration");
   const nextNumber = await runTransaction(db, async (transaction) => {
@@ -163,6 +181,7 @@ if (menuToggle && siteNav) {
 }
 
 if (form && formResult) {
+  loadFeeConfig();
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
 
@@ -190,7 +209,7 @@ if (form && formResult) {
       if (submitStatus) {
         submitStatus.textContent = "Opening payment window...";
       }
-      const fee = gender === "Female" ? 250 : 350;
+      const fee = gender === "Female" ? feeConfig.women : feeConfig.men;
       const order = await createRazorpayOrder(fee, name, eventName);
       const payment = await openRazorpayCheckout(order, {
         name: String(name || "").trim(),
@@ -202,19 +221,8 @@ if (form && formResult) {
       }
       await verifyRazorpayPayment(payment);
 
-      if (submitStatus) {
-        submitStatus.textContent = "Uploading documents...";
-      }
       const regNumber = await getNextRegistrationNumber();
       const registrationRef = doc(collection(db, "registrations"));
-      const [photoUrl, govtIdUrl] = await Promise.all([
-        uploadFile(photoFile),
-        uploadFile(govtIdFile),
-      ]);
-
-      if (submitStatus) {
-        submitStatus.textContent = "Saving your registration...";
-      }
       const payload = {
         name: String(name || "").trim(),
         nameLower: String(name || "").trim().toLowerCase(),
@@ -234,8 +242,8 @@ if (form && formResult) {
         paymentCurrency: "INR",
         paymentStatus: "paid",
         regNumber,
-        photoUrl: photoUrl || "",
-        govtIdUrl: govtIdUrl || "",
+        photoUrl: "",
+        govtIdUrl: "",
         status: "pending",
         certificateStatus: "pending",
         rank: "",
@@ -243,6 +251,33 @@ if (form && formResult) {
       };
 
       await setDoc(registrationRef, payload);
+
+      if (submitStatus) {
+        submitStatus.textContent = "Uploading documents...";
+      }
+      let photoUrl = "";
+      let govtIdUrl = "";
+      try {
+        const uploads = await Promise.allSettled([
+          uploadFile(photoFile),
+          uploadFile(govtIdFile),
+        ]);
+        photoUrl = uploads[0].status === "fulfilled" ? uploads[0].value : "";
+        govtIdUrl = uploads[1].status === "fulfilled" ? uploads[1].value : "";
+      } catch (uploadError) {
+        console.error("Upload failed", uploadError);
+      }
+
+      if (photoUrl || govtIdUrl) {
+        await updateDoc(registrationRef, {
+          photoUrl: photoUrl || "",
+          govtIdUrl: govtIdUrl || "",
+        });
+      }
+
+      if (submitStatus) {
+        submitStatus.textContent = "Finalizing registration...";
+      }
 
       if (submitStatus) {
         submitStatus.textContent = "Sending confirmation email...";

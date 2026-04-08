@@ -62,12 +62,17 @@ const womenPrizeInputs = [
 ];
 const savePrizeConfigButton = document.getElementById("savePrizeConfig");
 const prizeSaveMessage = document.getElementById("prizeSaveMessage");
+const feeMenInput = document.getElementById("feeMen");
+const feeWomenInput = document.getElementById("feeWomen");
+const saveFeeConfigButton = document.getElementById("saveFeeConfig");
+const feeSaveMessage = document.getElementById("feeSaveMessage");
 
 let registrations = [];
 let selectedIds = new Set();
 let currentUser = null;
 let isAdminUser = false;
 let prizeConfig = null;
+let feeConfig = null;
 
 const EMAILJS_SERVICE_ID = "service_oelo1t3";
 const EMAILJS_RANKED_TEMPLATE_ID = "template_hkgh7an";
@@ -454,6 +459,22 @@ async function loadPrizeConfig() {
   }
 }
 
+async function loadFeeConfig() {
+  try {
+    const configRef = doc(db, "settings", "fees");
+    const snap = await getDoc(configRef);
+    if (snap.exists()) {
+      feeConfig = snap.data();
+    } else {
+      feeConfig = null;
+    }
+    if (feeMenInput) feeMenInput.value = feeConfig?.men || "";
+    if (feeWomenInput) feeWomenInput.value = feeConfig?.women || "";
+  } catch (error) {
+    console.error("Failed to load fee config", error);
+  }
+}
+
 async function savePrizeConfig() {
   if (!savePrizeConfigButton) return;
   savePrizeConfigButton.disabled = true;
@@ -478,6 +499,29 @@ async function savePrizeConfig() {
   }
 }
 
+async function saveFeeConfig() {
+  if (!saveFeeConfigButton) return;
+  saveFeeConfigButton.disabled = true;
+  saveFeeConfigButton.textContent = "Saving...";
+  if (feeSaveMessage) feeSaveMessage.textContent = "";
+  try {
+    const men = feeMenInput && feeMenInput.value ? Number(feeMenInput.value) : "";
+    const women = feeWomenInput && feeWomenInput.value ? Number(feeWomenInput.value) : "";
+    await setDoc(doc(db, "settings", "fees"), {
+      men,
+      women,
+      updatedAt: serverTimestamp(),
+    }, { merge: true });
+    feeConfig = { men, women };
+    if (feeSaveMessage) feeSaveMessage.textContent = "Fee settings saved.";
+  } catch (error) {
+    console.error("Fee save failed", error);
+    if (feeSaveMessage) feeSaveMessage.textContent = "Could not save fees.";
+  } finally {
+    saveFeeConfigButton.disabled = false;
+    saveFeeConfigButton.textContent = "Save Fee Settings";
+  }
+}
 async function loadRegistrations() {
   if (!tableBody) return;
   tableBody.innerHTML = "<tr><td colspan=\"13\">Loading registrations...</td></tr>";
@@ -520,6 +564,9 @@ if (savePrizeConfigButton) {
   savePrizeConfigButton.addEventListener("click", savePrizeConfig);
 }
 
+if (saveFeeConfigButton) {
+  saveFeeConfigButton.addEventListener("click", saveFeeConfig);
+}
 if (selectAllRows) {
   selectAllRows.addEventListener("change", () => {
     const visibleChecks = tableBody ? tableBody.querySelectorAll("input[type=\"checkbox\"][data-id]") : [];
@@ -663,6 +710,7 @@ onAuthStateChanged(auth, async (user) => {
     }
     showLoginMessage("", false);
     loadPrizeConfig();
+    loadFeeConfig();
     loadRegistrations();
   } else {
     if (adminContent) {
