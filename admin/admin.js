@@ -751,7 +751,6 @@ function renderTable(list) {
             name: reg.name || "",
             eventName: reg.eventName || "",
             regNumber: reg.regNumber || "",
-            createdAt: serverTimestamp(),
           });
           await updateDoc(doc(db, "registrations", reg.id), { cardToken: token });
           reg.cardToken = token;
