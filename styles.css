@@ -1531,6 +1531,38 @@ a {
   align-items: start;
 }
 
+/* Participant card verification: improve small-screen layout */
+@media (max-width: 900px) {
+  .certificate-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .certificate-card {
+    padding: 1.4rem;
+  }
+
+  .certificate-shell {
+    padding: 1.6rem;
+  }
+
+  .certificate-header {
+    grid-template-columns: 1fr;
+    text-align: center;
+    justify-items: center;
+  }
+
+  .certificate-headline strong {
+    font-size: 1.25rem;
+  }
+
+  .certificate-footer {
+    grid-template-columns: 1fr;
+    gap: 0.8rem;
+    text-align: center;
+  }
+}
+
 .certificate-card {
   padding: 2rem;
   border-radius: 26px;

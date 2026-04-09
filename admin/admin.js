@@ -281,15 +281,23 @@ async function buildParticipantCardCanvas(reg, { verifyUrl } = {}) {
 
   // Official entry badge
   ctx.fillStyle = "rgba(255,106,0,0.18)";
-  roundRectPath(ctx, width - 320, 108, 240, 44, 22);
+  roundRectPath(ctx, width - 350, 104, 270, 48, 24);
   ctx.fill();
   ctx.strokeStyle = "rgba(255,106,0,0.36)";
   ctx.lineWidth = 2;
-  roundRectPath(ctx, width - 320, 108, 240, 44, 22);
+  roundRectPath(ctx, width - 350, 104, 270, 48, 24);
   ctx.stroke();
   ctx.fillStyle = "rgba(255,255,255,0.92)";
   ctx.font = "900 16px Manrope, system-ui, -apple-system, Segoe UI, Roboto, Arial";
-  ctx.fillText("OFFICIAL ENTRY", width - 290, 136);
+  ctx.fillText("OFFICIAL PARTICIPANT", width - 328, 134);
+
+  // Subtle divider line
+  ctx.strokeStyle = "rgba(255,255,255,0.10)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(60, 212);
+  ctx.lineTo(width - 60, 212);
+  ctx.stroke();
 
   // Body layout
   const photoX = 80;
@@ -351,8 +359,8 @@ async function buildParticipantCardCanvas(reg, { verifyUrl } = {}) {
   const qrY = height - 250;
   const qrBgX = qrX - 18;
   const qrBgY = qrY - 18;
-  ctx.fillStyle = "rgba(255,255,255,0.92)";
-  roundRectPath(ctx, qrBgX, qrBgY, qrSize + 36, qrSize + 56, 22);
+  ctx.fillStyle = "rgba(255,255,255,0.94)";
+  roundRectPath(ctx, qrBgX, qrBgY, qrSize + 36, qrSize + 64, 22);
   ctx.fill();
 
   if (verifyUrl) {
@@ -370,7 +378,7 @@ async function buildParticipantCardCanvas(reg, { verifyUrl } = {}) {
   }
 
   ctx.fillStyle = "rgba(11,18,32,0.9)";
-  ctx.font = "800 14px Manrope, system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  ctx.font = "900 14px Manrope, system-ui, -apple-system, Segoe UI, Roboto, Arial";
   ctx.fillText("Scan to verify card", qrBgX + 20, qrBgY + qrSize + 32);
 
   ctx.fillStyle = "rgba(11,18,32,0.72)";
