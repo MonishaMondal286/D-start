@@ -12,6 +12,8 @@ import {
 import {
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   onAuthStateChanged,
   signOut,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -100,6 +102,25 @@ function showLoginMessage(text, isError = false) {
   loginMessage.textContent = text;
   loginMessage.classList.toggle("is-error", isError);
 }
+
+function getAuthErrorCode(error) {
+  return typeof error?.code === "string" ? error.code : "";
+}
+
+async function completeRedirectIfNeeded() {
+  try {
+    const result = await getRedirectResult(auth);
+    if (result?.user) {
+      await ensureAdminRequest(result.user);
+      showLoginMessage("Signed in. Checking admin access...", false);
+    }
+  } catch (error) {
+    console.error(error);
+    showLoginMessage("Sign-in failed. Please try again.", true);
+  }
+}
+
+completeRedirectIfNeeded();
 
 async function hashDirectKey(value) {
   const data = new TextEncoder().encode(value);
@@ -645,8 +666,18 @@ if (loginButton) {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
       await ensureAdminRequest(result.user);
-      showLoginMessage("Signed in. Waiting for admin approval.", false);
+      showLoginMessage("Signed in. Checking admin access...", false);
     } catch (error) {
+      const code = getAuthErrorCode(error);
+      if (code === "auth/popup-blocked" || code === "auth/cancelled-popup-request") {
+        try {
+          showLoginMessage("Opening Google sign-in...", false);
+          await signInWithRedirect(auth, new GoogleAuthProvider());
+          return;
+        } catch (redirectError) {
+          console.error(redirectError);
+        }
+      }
       console.error(error);
       showLoginMessage("Unable to sign in. Please try again.", true);
     }
