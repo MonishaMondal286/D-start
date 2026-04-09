@@ -1,4 +1,5 @@
 import { db, auth, serverTimestamp } from "../firebase.js";
+import QRCode from "https://cdn.jsdelivr.net/npm/qrcode@1.5.4/+esm";
 import {
   collection,
   getDocs,
@@ -75,6 +76,10 @@ if (window.emailjs) {
   window.emailjs.init(EMAILJS_PUBLIC_KEY);
 }
 
+const CLOUDINARY_CLOUD_NAME = "dpyslavgz";
+const CLOUDINARY_UPLOAD_PRESET = "x2uxplk3";
+const CLOUDINARY_FOLDER = "kdsac-registrations";
+
 function getPrizeAmount(eventName, rankValue) {
   const rank = Number(rankValue);
   if (!rank || rank < 1 || rank > 5) return "";
@@ -103,6 +108,13 @@ if (menuToggle && siteNav) {
 
 function normalizeValue(value) {
   return String(value || "").toLowerCase();
+}
+
+function getPublicBaseUrl() {
+  const host = window.location.hostname;
+  return host && host !== "localhost" && host !== "127.0.0.1"
+    ? window.location.origin
+    : "https://kdsac.in";
 }
 
 function setCardMessage(text) {
@@ -145,8 +157,41 @@ function roundRectPath(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-async function buildParticipantCardCanvas(reg) {
-  // 1080x675 (nice shareable landscape card)
+async function uploadFileToCloudinary(file) {
+  if (!file || !file.name) return null;
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+  formData.append("folder", CLOUDINARY_FOLDER);
+
+  const response = await fetch(
+    `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`,
+    {
+      method: "POST",
+      body: formData,
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Cloudinary upload failed");
+  }
+
+  const result = await response.json();
+  return result.secure_url || result.url || null;
+}
+
+function pickFile({ accept } = {}) {
+  return new Promise((resolve) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = accept || "*/*";
+    input.onchange = () => resolve(input.files && input.files[0] ? input.files[0] : null);
+    input.click();
+  });
+}
+
+async function buildParticipantCardCanvas(reg, { verifyUrl } = {}) {
+  // 1080x675 shareable landscape ID card
   const width = 1080;
   const height = 675;
   const canvas = document.createElement("canvas");
@@ -155,58 +200,94 @@ async function buildParticipantCardCanvas(reg) {
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas unavailable");
 
-  // Background gradient
+  const EVENT_NAME = "Kharagpur Mini Marathon 2026";
+  const CLUB_NAME = "Kharagpur D Star Athletic Club (KDSAC)";
+  const WEBSITE = "kdsac.in";
+  const VENUE = "Kharagpur Sersa Stadium";
+
+  // Background
   const bg = ctx.createLinearGradient(0, 0, width, height);
-  bg.addColorStop(0, "#0b1220");
-  bg.addColorStop(1, "#141a2b");
+  bg.addColorStop(0, "#070b16");
+  bg.addColorStop(0.5, "#0b1630");
+  bg.addColorStop(1, "#0d1a33");
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, width, height);
 
-  // Accent ribbon
+  // Accent glow
+  ctx.save();
+  ctx.globalAlpha = 0.22;
+  ctx.fillStyle = "#ff6a00";
+  ctx.beginPath();
+  ctx.ellipse(200, 60, 260, 120, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 0.18;
+  ctx.fillStyle = "#ffb100";
+  ctx.beginPath();
+  ctx.ellipse(920, 620, 320, 180, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // Card shell
+  ctx.fillStyle = "rgba(255,255,255,0.06)";
+  roundRectPath(ctx, 36, 40, width - 72, height - 80, 34);
+  ctx.fill();
+
+  ctx.strokeStyle = "rgba(255,255,255,0.12)";
+  ctx.lineWidth = 2;
+  roundRectPath(ctx, 36, 40, width - 72, height - 80, 34);
+  ctx.stroke();
+
+  // Top accent ribbon
   const accent = ctx.createLinearGradient(0, 0, width, 0);
   accent.addColorStop(0, "#ff6a00");
   accent.addColorStop(1, "#ffb100");
   ctx.fillStyle = accent;
-  ctx.globalAlpha = 0.95;
-  roundRectPath(ctx, 40, 40, width - 80, 14, 8);
+  ctx.globalAlpha = 0.98;
+  roundRectPath(ctx, 60, 64, width - 120, 14, 8);
   ctx.fill();
   ctx.globalAlpha = 1;
 
-  // Card shell
-  ctx.fillStyle = "rgba(255,255,255,0.06)";
-  roundRectPath(ctx, 40, 70, width - 80, height - 110, 28);
-  ctx.fill();
-
-  ctx.strokeStyle = "rgba(255,255,255,0.10)";
-  ctx.lineWidth = 2;
-  roundRectPath(ctx, 40, 70, width - 80, height - 110, 28);
-  ctx.stroke();
-
-  // Logo + title
+  // Header: event + club
   try {
     const logo = await loadImage("../assets/logo.png");
     const logoSize = 74;
     ctx.save();
     ctx.globalAlpha = 0.95;
-    ctx.drawImage(logo, 80, 105, logoSize, logoSize);
+    ctx.drawImage(logo, 74, 98, logoSize, logoSize);
     ctx.restore();
   } catch {
     // ignore logo if it can't load
   }
 
   ctx.fillStyle = "rgba(255,255,255,0.92)";
-  ctx.font = "700 34px Manrope, system-ui, -apple-system, Segoe UI, Roboto, Arial";
-  ctx.fillText("KDSAC Participant Card", 170, 150);
+  ctx.font = "800 36px Manrope, system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  ctx.fillText(EVENT_NAME, 160, 130);
 
   ctx.fillStyle = "rgba(255,255,255,0.70)";
-  ctx.font = "600 18px Manrope, system-ui, -apple-system, Segoe UI, Roboto, Arial";
-  ctx.fillText("Kharagpur Mini Marathon 2026", 170, 180);
+  ctx.font = "700 18px Manrope, system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  ctx.fillText(CLUB_NAME, 160, 160);
 
-  // Left: photo
-  const photoX = 92;
-  const photoY = 235;
-  const photoW = 280;
-  const photoH = 340;
+  ctx.fillStyle = "rgba(255,255,255,0.56)";
+  ctx.font = "600 16px Manrope, system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  ctx.fillText(`Official website: ${WEBSITE}`, 160, 186);
+
+  // Official entry badge
+  ctx.fillStyle = "rgba(255,106,0,0.18)";
+  roundRectPath(ctx, width - 320, 108, 240, 44, 22);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(255,106,0,0.36)";
+  ctx.lineWidth = 2;
+  roundRectPath(ctx, width - 320, 108, 240, 44, 22);
+  ctx.stroke();
+  ctx.fillStyle = "rgba(255,255,255,0.92)";
+  ctx.font = "900 16px Manrope, system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  ctx.fillText("OFFICIAL ENTRY", width - 290, 136);
+
+  // Body layout
+  const photoX = 80;
+  const photoY = 230;
+  const photoW = 310;
+  const photoH = 380;
   ctx.fillStyle = "rgba(255,255,255,0.07)";
   roundRectPath(ctx, photoX, photoY, photoW, photoH, 24);
   ctx.fill();
@@ -231,15 +312,14 @@ async function buildParticipantCardCanvas(reg) {
     ctx.restore();
   } else {
     ctx.fillStyle = "rgba(255,255,255,0.6)";
-    ctx.font = "600 18px Manrope, system-ui, -apple-system, Segoe UI, Roboto, Arial";
-    ctx.fillText("No Photo", photoX + 90, photoY + 180);
+    ctx.font = "700 18px Manrope, system-ui, -apple-system, Segoe UI, Roboto, Arial";
+    ctx.fillText("PHOTO NOT AVAILABLE", photoX + 44, photoY + 205);
   }
 
   // Right: info
-  const infoX = 420;
-  const infoY = 245;
-  const infoW = width - infoX - 92;
-  const rowGap = 44;
+  const infoX = 430;
+  const infoY = 250;
+  const rowGap = 62;
 
   function labelValueRow(label, value, index) {
     const y = infoY + index * rowGap;
@@ -247,45 +327,51 @@ async function buildParticipantCardCanvas(reg) {
     ctx.font = "700 14px Manrope, system-ui, -apple-system, Segoe UI, Roboto, Arial";
     ctx.fillText(label.toUpperCase(), infoX, y);
     ctx.fillStyle = "rgba(255,255,255,0.92)";
-    ctx.font = "700 24px Manrope, system-ui, -apple-system, Segoe UI, Roboto, Arial";
+    ctx.font = "800 26px Manrope, system-ui, -apple-system, Segoe UI, Roboto, Arial";
     const text = String(value || "-");
-    ctx.fillText(text, infoX, y + 28);
+    ctx.fillText(text, infoX, y + 32);
   }
 
-  // Badge
-  ctx.fillStyle = "rgba(255,106,0,0.18)";
-  roundRectPath(ctx, infoX, 205, 220, 34, 18);
-  ctx.fill();
-  ctx.strokeStyle = "rgba(255,106,0,0.35)";
-  ctx.lineWidth = 2;
-  roundRectPath(ctx, infoX, 205, 220, 34, 18);
-  ctx.stroke();
-  ctx.fillStyle = "rgba(255,255,255,0.90)";
-  ctx.font = "800 14px Manrope, system-ui, -apple-system, Segoe UI, Roboto, Arial";
-  ctx.fillText("OFFICIAL ENTRY", infoX + 16, 228);
-
-  labelValueRow("Name", reg?.name || "-", 0);
-  labelValueRow("Registration No", reg?.regNumber || "-", 1);
+  labelValueRow("Participant name", reg?.name || "-", 0);
+  labelValueRow("Registration no", reg?.regNumber || "-", 1);
   labelValueRow("Category", reg?.eventName || "-", 2);
-  labelValueRow("Venue", "Kharagpur Sersa Stadium", 3);
+  labelValueRow("Venue", VENUE, 3);
 
-  // Footer
-  ctx.fillStyle = "rgba(255,255,255,0.55)";
-  ctx.font = "600 16px Manrope, system-ui, -apple-system, Segoe UI, Roboto, Arial";
-  const footer = "Share this card to promote the event • #KDSAC #MiniMarathon2026";
-  ctx.fillText(footer, 80, height - 48);
-
-  // Subtle QR placeholder block (optional future)
-  ctx.fillStyle = "rgba(255,255,255,0.06)";
-  roundRectPath(ctx, infoX + infoW - 130, height - 160, 110, 110, 16);
+  // QR (verify link)
+  const qrSize = 176;
+  const qrX = width - 260;
+  const qrY = height - 250;
+  const qrBgX = qrX - 18;
+  const qrBgY = qrY - 18;
+  ctx.fillStyle = "rgba(255,255,255,0.92)";
+  roundRectPath(ctx, qrBgX, qrBgY, qrSize + 36, qrSize + 56, 22);
   ctx.fill();
-  ctx.strokeStyle = "rgba(255,255,255,0.10)";
-  ctx.lineWidth = 2;
-  roundRectPath(ctx, infoX + infoW - 130, height - 160, 110, 110, 16);
-  ctx.stroke();
-  ctx.fillStyle = "rgba(255,255,255,0.45)";
-  ctx.font = "700 12px Manrope, system-ui, -apple-system, Segoe UI, Roboto, Arial";
-  ctx.fillText("KDSAC", infoX + infoW - 103, height - 98);
+
+  if (verifyUrl) {
+    const qrDataUrl = await QRCode.toDataURL(verifyUrl, {
+      margin: 1,
+      width: qrSize,
+      errorCorrectionLevel: "M",
+      color: {
+        dark: "#0b1220",
+        light: "#ffffff",
+      },
+    });
+    const qrImg = await loadImage(qrDataUrl);
+    ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
+  }
+
+  ctx.fillStyle = "rgba(11,18,32,0.9)";
+  ctx.font = "800 14px Manrope, system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  ctx.fillText("Scan to verify", qrBgX + 20, qrBgY + qrSize + 32);
+
+  // Footer line
+  ctx.fillStyle = "rgba(255,255,255,0.58)";
+  ctx.font = "700 16px Manrope, system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  ctx.fillText("Participant Card • Share for free promotion", 74, height - 62);
+  ctx.fillStyle = "rgba(255,255,255,0.42)";
+  ctx.font = "600 14px Manrope, system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  ctx.fillText(`#KDSAC  •  ${EVENT_NAME}`, 74, height - 38);
 
   return canvas;
 }
@@ -535,6 +621,31 @@ function renderTable(list) {
       photoLink.className = "link-button";
       photoLink.textContent = "Download";
       photoLink.addEventListener("click", () => openSignedUrl(reg.photoUrl));
+      const replacePhoto = document.createElement("button");
+      replacePhoto.type = "button";
+      replacePhoto.className = "link-button";
+      replacePhoto.textContent = "Replace";
+      replacePhoto.addEventListener("click", async () => {
+        replacePhoto.disabled = true;
+        const oldText = replacePhoto.textContent;
+        replacePhoto.textContent = "Uploading...";
+        try {
+          const file = await pickFile({ accept: "image/*" });
+          if (!file) return;
+          const url = await uploadFileToCloudinary(file);
+          if (url) {
+            await updateDoc(doc(db, "registrations", reg.id), { photoUrl: url });
+            reg.photoUrl = url;
+            setCardMessage("Photo updated. Generate the card again.");
+          }
+        } catch (error) {
+          console.error(error);
+          setCardMessage("Photo upload failed.");
+        } finally {
+          replacePhoto.disabled = false;
+          replacePhoto.textContent = oldText;
+        }
+      });
       const cardButton = document.createElement("button");
       cardButton.type = "button";
       cardButton.className = "link-button";
@@ -544,7 +655,10 @@ function renderTable(list) {
         const oldText = cardButton.textContent;
         cardButton.textContent = "Generating...";
         try {
-          const canvas = await buildParticipantCardCanvas(reg);
+          const base = getPublicBaseUrl();
+          const certId = await hashCertificateId(reg.nameLower || normalizeValue(reg.name), reg.dob || "");
+          const verifyUrl = `${base}/verify.html?cert=${encodeURIComponent(certId)}`;
+          const canvas = await buildParticipantCardCanvas(reg, { verifyUrl });
           openCardModalWithCanvas(canvas, reg);
         } catch (error) {
           console.error(error);
@@ -557,8 +671,65 @@ function renderTable(list) {
       });
       photoWrap.appendChild(photoButton);
       photoWrap.appendChild(photoLink);
+      photoWrap.appendChild(replacePhoto);
       photoWrap.appendChild(cardButton);
       fileList.appendChild(photoWrap);
+    } else {
+      const missingWrap = document.createElement("div");
+      missingWrap.className = "file-item";
+      const uploadPhoto = document.createElement("button");
+      uploadPhoto.type = "button";
+      uploadPhoto.className = "link-button";
+      uploadPhoto.textContent = "Upload Photo";
+      uploadPhoto.addEventListener("click", async () => {
+        uploadPhoto.disabled = true;
+        const oldText = uploadPhoto.textContent;
+        uploadPhoto.textContent = "Uploading...";
+        try {
+          const file = await pickFile({ accept: "image/*" });
+          if (!file) return;
+          const url = await uploadFileToCloudinary(file);
+          if (url) {
+            await updateDoc(doc(db, "registrations", reg.id), { photoUrl: url });
+            reg.photoUrl = url;
+            setCardMessage("Photo uploaded. You can generate the card now.");
+          }
+        } catch (error) {
+          console.error(error);
+          setCardMessage("Photo upload failed.");
+        } finally {
+          uploadPhoto.disabled = false;
+          uploadPhoto.textContent = oldText;
+        }
+      });
+
+      const cardButton = document.createElement("button");
+      cardButton.type = "button";
+      cardButton.className = "link-button";
+      cardButton.textContent = "Card";
+      cardButton.addEventListener("click", async () => {
+        cardButton.disabled = true;
+        const oldText = cardButton.textContent;
+        cardButton.textContent = "Generating...";
+        try {
+          const base = getPublicBaseUrl();
+          const certId = await hashCertificateId(reg.nameLower || normalizeValue(reg.name), reg.dob || "");
+          const verifyUrl = `${base}/verify.html?cert=${encodeURIComponent(certId)}`;
+          const canvas = await buildParticipantCardCanvas(reg, { verifyUrl });
+          openCardModalWithCanvas(canvas, reg);
+        } catch (error) {
+          console.error(error);
+          setCardMessage("Could not generate card. Please try again.");
+          if (cardModal) cardModal.hidden = false;
+        } finally {
+          cardButton.disabled = false;
+          cardButton.textContent = oldText;
+        }
+      });
+
+      missingWrap.appendChild(uploadPhoto);
+      missingWrap.appendChild(cardButton);
+      fileList.appendChild(missingWrap);
     }
 
     if (reg.govtIdUrl) {
