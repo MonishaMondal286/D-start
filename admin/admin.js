@@ -110,6 +110,12 @@ function normalizeValue(value) {
   return String(value || "").toLowerCase();
 }
 
+function generateCardToken() {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 function getPublicBaseUrl() {
   const host = window.location.hostname;
   return host && host !== "localhost" && host !== "127.0.0.1"
@@ -638,8 +644,19 @@ function renderTable(list) {
       cardButton.textContent = "Generating...";
       try {
         const base = getPublicBaseUrl();
-        // QR should be specific to participant card verification.
-        const token = reg.cardToken ? String(reg.cardToken) : "";
+        // Ensure existing registrations get a token + verification doc.
+        let token = reg.cardToken ? String(reg.cardToken) : "";
+        if (!token) {
+          token = generateCardToken();
+          await setDoc(doc(db, "participant_cards", token), {
+            name: reg.name || "",
+            eventName: reg.eventName || "",
+            regNumber: reg.regNumber || "",
+            createdAt: serverTimestamp(),
+          });
+          await updateDoc(doc(db, "registrations", reg.id), { cardToken: token });
+          reg.cardToken = token;
+        }
         const verifyUrl = token
           ? `${base}/card-verify.html?card=${encodeURIComponent(token)}`
           : `${base}/card-verify.html`;
