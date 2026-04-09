@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Verify Participant Card | Kharagpur Mini Marathon 2026</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="icon" href="./assets/logo.png" type="image/png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Manrope:wght@400;500;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container nav">
+        <a class="brand" href="./index.html">
+          <img class="brand-logo" src="./assets/logo.png" alt="D Star Athletic Club logo" />
+          <span class="brand-text">
+            <strong>D Star Athletic Club <img class="brand-runner-image" src="./run.png" alt="Running athlete" /></strong>
+            <small>Sports Events & Registration</small>
+          </span>
+        </a>
+      </div>
+    </header>
+
+    <main>
+      <section class="section">
+        <div class="container certificate-grid">
+          <div class="certificate-copy">
+            <p class="eyebrow">Participant Card Verification</p>
+            <h2>Verify a participant ID card.</h2>
+            <p>Scan the QR code on the participant card to see the official participant details.</p>
+          </div>
+
+          <div class="certificate-card">
+            <div class="certificate-form">
+              <p class="form-note" id="cardVerifyMessage">Waiting for QR scan…</p>
+            </div>
+
+            <div class="certificate-preview" id="cardVerifyResult" hidden>
+              <div class="certificate-shell">
+                <div class="certificate-header">
+                  <div class="certificate-logo">
+                    <img src="./assets/logo.png" alt="D Star Athletic Club logo" />
+                  </div>
+                  <div class="certificate-headline">
+                    <span>Kharagpur D Star Athletic Club (KDSAC)</span>
+                    <strong>Kharagpur Mini Marathon 2026</strong>
+                    <small>Fit India Registered Youth Club</small>
+                  </div>
+                </div>
+                <div class="certificate-body">
+                  <h3 id="cardVerifyTitle">Participant Card</h3>
+                  <p class="certificate-name" id="cardVerifyName">Participant Name</p>
+                  <p class="certificate-meta" id="cardVerifyMeta">Event</p>
+                  <p class="certificate-reg" id="cardVerifyReg">Registration No</p>
+                </div>
+                <div class="certificate-footer">
+                  <div>
+                    <small>Date & Venue</small>
+                    <strong>10 May 2026 • Kharagpur Sersa Stadium</strong>
+                  </div>
+                  <div>
+                    <small>Status</small>
+                    <strong id="cardVerifyStatus">Valid</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="./card-verify.js"></script>
+  </body>
+</html>
+

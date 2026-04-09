@@ -205,7 +205,7 @@ async function buildParticipantCardCanvas(reg, { verifyUrl } = {}) {
   const WEBSITE = "kdsac.in";
   const VENUE = "Kharagpur Sersa Stadium";
   const EVENT_DATE = "10 May 2026";
-  const VERIFY_TEXT = "Verify at kdsac.in/verify.html";
+  const VERIFY_TEXT = "Verify at kdsac.in/card-verify.html";
 
   // Background
   const bg = ctx.createLinearGradient(0, 0, width, height);
@@ -365,7 +365,7 @@ async function buildParticipantCardCanvas(reg, { verifyUrl } = {}) {
 
   ctx.fillStyle = "rgba(11,18,32,0.9)";
   ctx.font = "800 14px Manrope, system-ui, -apple-system, Segoe UI, Roboto, Arial";
-  ctx.fillText("Scan to open verify page", qrBgX + 20, qrBgY + qrSize + 32);
+  ctx.fillText("Scan to verify card", qrBgX + 20, qrBgY + qrSize + 32);
 
   ctx.fillStyle = "rgba(11,18,32,0.72)";
   ctx.font = "700 12px Manrope, system-ui, -apple-system, Segoe UI, Roboto, Arial";
@@ -638,8 +638,11 @@ function renderTable(list) {
       cardButton.textContent = "Generating...";
       try {
         const base = getPublicBaseUrl();
-        // Do not embed participant-specific data in QR/link.
-        const verifyUrl = `${base}/verify.html`;
+        // QR should be specific to participant card verification.
+        const token = reg.cardToken ? String(reg.cardToken) : "";
+        const verifyUrl = token
+          ? `${base}/card-verify.html?card=${encodeURIComponent(token)}`
+          : `${base}/card-verify.html`;
         const canvas = await buildParticipantCardCanvas(reg, { verifyUrl });
         openCardModalWithCanvas(canvas, reg);
       } catch (error) {

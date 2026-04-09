@@ -164,6 +164,12 @@ async function uploadFile(file) {
   return result.secure_url || result.url || null;
 }
 
+function generateCardToken() {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 async function getNextRegistrationNumber() {
   const counterRef = doc(db, "counters", "registration");
   const nextNumber = await runTransaction(db, async (transaction) => {
@@ -263,6 +269,8 @@ if (form && formResult) {
 
       const regNumber = await getNextRegistrationNumber();
       const registrationRef = doc(collection(db, "registrations"));
+      const cardToken = generateCardToken();
+      const cardRef = doc(db, "participant_cards", cardToken);
       if (submitStatus) {
         submitStatus.textContent = "Uploading documents...";
       }
@@ -300,6 +308,7 @@ if (form && formResult) {
         paymentStatus: payment.status,
         paymentMethod: payment.method,
         regNumber,
+        cardToken,
         photoUrl: photoUrl || "",
         govtIdUrl: govtIdUrl || "",
         status: "pending",
@@ -307,6 +316,14 @@ if (form && formResult) {
         rank: "",
         createdAt: serverTimestamp(),
       };
+
+      // Public verification doc for ID card QR (contains minimal fields)
+      await setDoc(cardRef, {
+        name: payload.name,
+        eventName: payload.eventName,
+        regNumber: payload.regNumber,
+        createdAt: serverTimestamp(),
+      });
 
       await setDoc(registrationRef, payload);
 

@@ -25,6 +25,15 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    // Public participant card verification by QR token.
+    // Stores minimal non-sensitive fields shown on verify page.
+    match /participant_cards/{token} {
+      allow get: if true;
+      allow list: if false;
+      allow create: if true;
+      allow update, delete: if isAdmin();
+    }
+
     match /admin_requests/{uid} {
       allow create: if isSignedIn() && request.auth.uid == uid;
       allow read: if isAdmin() || (isSignedIn() && request.auth.uid == uid);
